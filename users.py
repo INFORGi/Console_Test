@@ -12,7 +12,7 @@ class Admin:
     
     def import_users(self):
         print("Импорт новых пользователей")
-        # Реализация импорта пользователей
+        self.db.import_users()
 
     def add_test(self):
         print("Добавление теста")

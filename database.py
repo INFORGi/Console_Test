@@ -1,4 +1,7 @@
 import sqlite3
+import os
+from tkinter import Tk, filedialog
+import pandas as pd
 
 class DataBase:
     def __init__(self):
@@ -165,3 +168,29 @@ class DataBase:
         self.cur.execute("INSERT INTO TeachersGroups (CodeGroup, IDTeacher) VALUES (?, ?)", (group_code[0], teacher_id[0]))
         self.conn.commit()
         print(f"Преподаватель {teacher_login} добавлен в группу {group_name} успешно")
+
+    def import_users(self):
+        # Создаем скрытое окно Tkinter
+        window = Tk()
+        window.withdraw()
+        window.attributes("-topmost",True)
+
+        # Открываем диалоговое окно для выбора файла
+        file_path = filedialog.askopenfilename()
+
+        # Проверяем, выбран ли файл
+        if file_path:
+            
+            role = input("Выберите роль: 1-Админестратор, 2-Куратор, 3-Преподаватель, 4-Ученик")
+            
+            data = pd.read_csv(file_path)
+
+            for user in data:
+                user_data = user.split(';')
+
+                print(user_data)
+                # self.cur.execute("INSERT INTO Users (Name, TypeOfUser, Login, Password) VALUES (?, ?, ?, ?)", (user_data[0], role, user_data[1], user_data[2]))
+
+            print(data[0])
+        else:
+            print("Файл не выбран")
