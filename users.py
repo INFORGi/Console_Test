@@ -46,6 +46,12 @@ class Admin:
         student_login = input("Логин студента: ")
         self.db.add_student_to_group(group_name, student_login)
 
+    def add_teacher_to_group(self):
+        print("Добавление преподавателя в группу")
+        group_name = input("Название группы: ")
+        teacher_login = input("Логин преподавателя: ")
+        self.db.add_teacher_to_group(group_name, teacher_login)
+
 class Tutore(Admin):
     def add_teacher_to_group(self):
         print("Добавление преподавателя в группу")
@@ -56,6 +62,10 @@ class Tutore(Admin):
     def manage_tests(self):
         print("Добавление/редактирование тестов")
         # Реализация добавления/редактирования тестов
+
+    def view_test_results(self):
+        print("Просмотр результатов тестов")
+        # Реализация просмотра результатов тестов
 
 class Teacher:
     def __init__(self, db):

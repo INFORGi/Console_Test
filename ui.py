@@ -29,7 +29,8 @@ class UI:
             print("6: Редактировать пользователя")
             print("7: Создать группу")
             print("8: Заполнить группу")
-            print("9: Выход")
+            print("9: Добавить преподавателя в группу")
+            print("10: Выход")
             choice = input("Выберите опцию: ")
 
             if choice == '1':
@@ -49,6 +50,8 @@ class UI:
             elif choice == '8':
                 admin.fill_group()
             elif choice == '9':
+                admin.add_teacher_to_group()
+            elif choice == '10':
                 break
             else:
                 print("Неверный выбор. Попробуйте еще раз.")
@@ -60,7 +63,8 @@ class UI:
             print("2: Заполнить группу")
             print("3: Добавить в группу преподавателя")
             print("4: Добавить/редактировать тесты")
-            print("5: Выход")
+            print("5: Просмотр результатов тестов")
+            print("6: Выход")
             choice = input("Выберите опцию: ")
 
             if choice == '1':
@@ -72,6 +76,8 @@ class UI:
             elif choice == '4':
                 tutore.manage_tests()
             elif choice == '5':
+                tutore.view_test_results()
+            elif choice == '6':
                 break
             else:
                 print("Неверный выбор. Попробуйте еще раз.")
