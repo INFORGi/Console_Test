@@ -1,15 +1,18 @@
 import sqlite3
+import json
 import os
 from tkinter import Tk, filedialog
 import pandas as pd
 
 class DataBase:
     def __init__(self):
-        self.conn = sqlite3.connect('test.db')
-        self.cur = self.conn.cursor()
-        self.create_tables()
+        self.conn = sqlite3.connect('test.db')  # Создаем подключение к базе данных
+        self.cur = self.conn.cursor()  # Создаем курсор для выполнения SQL-запросов
+
+        self.create_tables()  # Создаем таблицы
 
     def create_tables(self):
+        # Создание таблицы типов пользователей
         self.cur.execute('''
         CREATE TABLE IF NOT EXISTS TypeOfUsers (
             Code        INTEGER PRIMARY KEY ASC AUTOINCREMENT,
@@ -17,47 +20,50 @@ class DataBase:
         );
         ''')
 
+        # Создание таблицы пользователей
         self.cur.execute('''
         CREATE TABLE IF NOT EXISTS Users (
             ID         INTEGER PRIMARY KEY ASC AUTOINCREMENT,
             Name       TEXT    NOT NULL,
-            TypeOfUser TEXT    NOT NULL,
-            Login      TEXT    NOT NULL
-                               UNIQUE,
+            TypeOfUser INTEGER NOT NULL,
+            Login      TEXT    NOT NULL UNIQUE,
             Password   TEXT    NOT NULL,
             FOREIGN KEY (TypeOfUser)
             REFERENCES TypeOfUsers (Code) ON DELETE NO ACTION
-                                          ON UPDATE CASCADE,
+                                        ON UPDATE CASCADE,
             UNIQUE (ID)
         );
         ''')
 
+        # Создание таблицы тестов
         self.cur.execute('''
         CREATE TABLE IF NOT EXISTS Tests (
             Code             INTEGER PRIMARY KEY ASC AUTOINCREMENT,
             Name             TEXT    NOT NULL,
             Creator          INTEGER NOT NULL,
-            [Group]          INTEGER NOT NULL
-                                     REFERENCES [Group] (Code) ON DELETE NO ACTION
-                                                               ON UPDATE CASCADE,
+            GroupCode        INTEGER NOT NULL,
             NumberOfAttempts INTEGER NOT NULL,
             FOREIGN KEY (Creator)
-            REFERENCES Users (ID) 
+            REFERENCES Users (ID),
+            FOREIGN KEY (GroupCode)
+            REFERENCES [Group] (Code) ON DELETE NO ACTION
+                                    ON UPDATE CASCADE
         );
         ''')
 
+        # Создание таблицы результатов тестов
         self.cur.execute('''
         CREATE TABLE IF NOT EXISTS TestResults (
-            IDResult   INTEGER PRIMARY KEY ASC AUTOINCREMENT
-                           NOT NULL,
+            IDResult   INTEGER PRIMARY KEY ASC AUTOINCREMENT NOT NULL,
             CodeTest   INTEGER REFERENCES Tests (Code) ON DELETE NO ACTION
-                                                       ON UPDATE CASCADE,
+                                                    ON UPDATE CASCADE,
             Evaluation INTEGER,
             IDStudent  INTEGER REFERENCES Users (ID) ON DELETE NO ACTION
-                                                     ON UPDATE CASCADE
+                                                    ON UPDATE CASCADE
         );
         ''')
 
+        # Создание таблицы групп учителей
         self.cur.execute('''
         CREATE TABLE IF NOT EXISTS TeachersGroups (
             IDTeacher INTEGER REFERENCES Users (ID) ON DELETE NO ACTION
@@ -67,26 +73,28 @@ class DataBase:
         );
         ''')
 
+        # Создание таблицы содержимого тестов
         self.cur.execute('''
-        CREATE TABLE IF NOT EXISTS Questions (
-            Code        INTEGER PRIMARY KEY ASC AUTOINCREMENT,
-            Description TEXT    NOT NULL,
-            CodeTest    INTEGER NOT NULL,
+        CREATE TABLE IF NOT EXISTS ContentTheTests (
+            Code            INTEGER PRIMARY KEY ASC AUTOINCREMENT,
+            IsQuestion      TEXT    NOT NULL,
+            Answers         TEXT    NOT NULL,
+            CheckingAnswers TEXT    NOT NULL,
+            CodeTest        INTEGER NOT NULL,
             FOREIGN KEY (CodeTest)
-            REFERENCES Tests (Code) 
+            REFERENCES Tests (Code)
         );
         ''')
 
+        # Создание таблицы групп
         self.cur.execute('''
         CREATE TABLE IF NOT EXISTS [Group] (
-            Code      INTEGER PRIMARY KEY ASC AUTOINCREMENT
-                              UNIQUE
-                              NOT NULL,
-            NameGroup TEXT    NOT NULL
-                              UNIQUE
+            Code      INTEGER PRIMARY KEY ASC AUTOINCREMENT UNIQUE NOT NULL,
+            NameGroup TEXT    NOT NULL UNIQUE
         );
         ''')
 
+        # Создание таблицы участников групп
         self.cur.execute('''
         CREATE TABLE IF NOT EXISTS BandMembers (
             CodeGroup INTEGER REFERENCES [Group] (Code) ON DELETE NO ACTION
@@ -96,29 +104,21 @@ class DataBase:
         );
         ''')
 
-        self.cur.execute('''
-        CREATE TABLE IF NOT EXISTS Answers (
-            Code          INTEGER PRIMARY KEY ASC AUTOINCREMENT,
-            Description   TEXT    NOT NULL,
-            Accuracy      BOOLEAN NOT NULL,
-            CodeQuestions INTEGER NOT NULL,
-            FOREIGN KEY (CodeQuestions)
-            REFERENCES Questions (Code) 
-        );
-        ''')
-
-        # Вставка данных для тестирования
+        # # Вставка тестовых данных в таблицу типов пользователей
         # self.cur.execute("INSERT INTO TypeOfUsers (Description) VALUES ('Admin')")
         # self.cur.execute("INSERT INTO TypeOfUsers (Description) VALUES ('Tutore')")
         # self.cur.execute("INSERT INTO TypeOfUsers (Description) VALUES ('Teacher')")
         # self.cur.execute("INSERT INTO TypeOfUsers (Description) VALUES ('Student')")
 
-        # self.cur.execute("INSERT INTO Users (Name, TypeOfUser, Login, Password) VALUES ('Admin User', '1', 'admin', 'adminpass')")
-        # self.cur.execute("INSERT INTO Users (Name, TypeOfUser, Login, Password) VALUES ('Tutore User', '2', 'tutore', 'tutorepass')")
-        # self.cur.execute("INSERT INTO Users (Name, TypeOfUser, Login, Password) VALUES ('Teacher User', '3', 'teacher', 'teacherpass')")
-        # self.cur.execute("INSERT INTO Users (Name, TypeOfUser, Login, Password) VALUES ('Student User', '4', 'student', 'studentpass')")
+        # # Вставка тестовых данных в таблицу пользователей
+        # self.cur.execute("INSERT INTO Users (Name, TypeOfUser, Login, Password) VALUES ('Admin User', 1, 'admin', 'adminpass')")
+        # self.cur.execute("INSERT INTO Users (Name, TypeOfUser, Login, Password) VALUES ('Tutore User', 2, 'tutore', 'tutorepass')")
+        # self.cur.execute("INSERT INTO Users (Name, TypeOfUser, Login, Password) VALUES ('Teacher User', 3, 'teacher', 'teacherpass')")
+        # self.cur.execute("INSERT INTO Users (Name, TypeOfUser, Login, Password) VALUES ('Student User', 4, 'student', 'studentpass')")
 
+        # Сохранение изменений
         self.conn.commit()
+
 
     def verification_of_authorization(self):
         self.name = input("Введите имя: ")
@@ -135,14 +135,13 @@ class DataBase:
         # Проверяем, существует ли пользователь с таким логином
         self.cur.execute("SELECT COUNT(*) FROM Users WHERE Login=?", (login,))
         count = self.cur.fetchone()
-        if count != None:
+        if count is None:
             print(f"Ошибка: Пользователь с логином {login} уже существует")
         else:
             # Если пользователь с таким логином не существует, добавляем его
             self.cur.execute("INSERT INTO Users (Name, TypeOfUser, Login, Password) VALUES (?, ?, ?, ?)", (name, role, login, password))
             self.conn.commit()
             print(f"Пользователь {name} добавлен успешно")
-
 
     def delete_user(self, login):
         self.cur.execute("DELETE FROM Users WHERE Login = ?", (login,))
@@ -197,14 +196,13 @@ class DataBase:
             else:
                 print(f"Ошибка: Студент {student_login} уже состоит в группе {group_name}")
 
-
     def add_teacher_to_group(self, group_name, teacher_login):
         # Проверяем, существует ли группа с таким названием
         self.cur.execute("SELECT Code FROM [Group] WHERE NameGroup = ?", (group_name,))
         group_code = self.cur.fetchone()
 
         # Проверяем, существует ли преподаватель с указанным логином
-        self.cur.execute("SELECT ID FROM Users WHERE Login = ?", (teacher_login,))
+        self.cur.execute("SELECT ID FROM Users WHERE Login = ? AND TypeOfUser = 4", (teacher_login,))
         teacher_id = self.cur.fetchone()
 
         if group_code is None:
@@ -222,8 +220,6 @@ class DataBase:
                 print(f"Преподаватель {teacher_login} добавлен в группу {group_name} успешно")
             else:
                 print(f"Ошибка: Преподаватель {teacher_login} уже состоит в группе {group_name}")
-
-
 
     def import_users(self):
         window = Tk()
